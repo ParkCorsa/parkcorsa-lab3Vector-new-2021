@@ -5,185 +5,326 @@
 
 #include <climits>
 #include <cstddef>
+#include <iostream>
 
 namespace sjtu {
-/**
- * a data container like std::vector
- * store data in a successive memory and support random access.
- */
+
 template<typename T>
 class vector {
-public:
-    /**
-     * TODO
-     * a type for actions of the elements of a vector, and you should write
-     *   a class named const_iterator with same interfaces.
-     */
-    /**
-     * you can see RandomAccessIterator at CppReference for help.
-     */
+    size_t siz, cap;
+    T** vec;
+    void expand(){
+        if(siz < cap)return;
+        T** pre = new T*[siz];
+        for(size_t i = 0; i < siz; ++i){
+            pre[i] = new T(*vec[i]);
+            delete vec[i];
+        }
+        delete [] vec;
+        cap <<= 1, vec = new T*[cap];
+        for(size_t i = 0; i < siz; ++i){
+            vec[i] = new T(*pre[i]);
+            delete pre[i];
+        }
+        delete [] pre;
+    }
+    void shrink(){
+        if(cap == 1 || siz<<2 > cap)return;
+        T** pre = new T*[siz];
+        for(size_t i = 0; i < siz; ++i){
+            pre[i] = new T(*vec[i]);
+            delete vec[i];
+        }
+        delete [] vec;
+        cap >>= 1, vec = new T*[cap];
+        for(size_t i = 0; i < siz; ++i){
+            vec[i] = new T(*pre[i]);
+            delete pre[i];
+        }
+        delete [] pre;
+    }    
+    public:
     class const_iterator;
     class iterator {
+    friend class vector;
+    friend class const_iterator;
     private:
-        /**
-         * TODO add data members
-         *   just add whatever you want.
-         */
+        size_t num;
+        T** iter;    
     public:
-        /**
-         * return a new iterator which pointer n-next elements
-         * as well as operator-
-         */
+        iterator(){num = 0;}
+        iterator(const iterator &other){
+            iter = other.iter, num = other.num;
+        }
         iterator operator+(const int &n) const {
-            //TODO
+            iterator tmp = *this;
+            tmp.num += n;
+            return tmp;
         }
         iterator operator-(const int &n) const {
-            //TODO
+            iterator tmp = *this;
+            tmp.num -= n;
+            return tmp;
         }
-        // return the distance between two iterators,
-        // if these two iterators point to different vectors, throw invaild_iterator.
         int operator-(const iterator &rhs) const {
-            //TODO
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num - rhs.num;
         }
         iterator& operator+=(const int &n) {
-            //TODO
+            num += n;
+            return *this;
         }
         iterator& operator-=(const int &n) {
-            //TODO
+            num -= n;
+            return *this;            
         }
-        /**
-         * TODO iter++
-         */
-        iterator operator++(int) {}
-        /**
-         * TODO ++iter
-         */
-        iterator& operator++() {}
-        /**
-         * TODO iter--
-         */
-        iterator operator--(int) {}
-        /**
-         * TODO --iter
-         */
-        iterator& operator--() {}
-        /**
-         * TODO *it
-         */
-        T& operator*() const{}
-        /**
-         * a operator to check whether two iterators are same (pointing to the same memory address).
-         */
-        bool operator==(const iterator &rhs) const {}
-        bool operator==(const const_iterator &rhs) const {}
-        /**
-         * some other operator for iterator.
-         */
-        bool operator!=(const iterator &rhs) const {}
-        bool operator!=(const const_iterator &rhs) const {}
+        iterator operator++(int) {
+            iterator pre = *this;
+            num++;
+            return pre;
+        }
+        iterator& operator++() {
+            ++num;
+            return *this;
+        }
+        iterator operator--(int) {
+            iterator pre = *this;
+            num--;
+            return pre;            
+        }
+        iterator& operator--() {
+            --num;
+            return *this;
+        }
+        T& operator*() const{return *iter[num];}
+        bool operator==(const iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num == rhs.num;
+        }
+        bool operator==(const const_iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num == rhs.num;
+        }
+        bool operator!=(const iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num != rhs.num;
+        }
+        bool operator!=(const const_iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num != rhs.num;
+        }
     };
-    /**
-     * TODO
-     * has same function as iterator, just for a const object.
-     */
     class const_iterator {
-
+    friend class vector;
+    friend class iterator;
+    private:
+        size_t num;
+        T** iter;        
+    public:
+        const_iterator(){num = 0;}
+        const_iterator(const const_iterator &other){
+            iter = other.iter, num = other.num;
+        }
+        const_iterator operator+(const int &n) const {
+            const_iterator tmp = *this;
+            tmp.num += n;
+            return tmp;
+        }
+        const_iterator operator-(const int &n) const {
+            const_iterator tmp = *this;
+            tmp.num -= n;
+            return tmp;
+        }
+        int operator-(const const_iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num - rhs.num;
+        }
+        const_iterator& operator+=(const int &n) {
+            num += n;
+            return *this;
+        }
+        const_iterator& operator-=(const int &n) {
+            num -= n;
+            return *this;            
+        }
+        const_iterator operator++(int) {
+            const_iterator pre = *this;
+            num++;
+            return pre;
+        }
+        const_iterator& operator++() {
+            ++num;
+            return *this;
+        }
+        const_iterator operator--(int) {
+            const_iterator pre = *this;
+            num--;
+            return pre;            
+        }
+        const_iterator& operator--() {
+            --num;
+            return *this;
+        }
+        const T& operator*() const{return *iter[num];}
+        bool operator==(const const_iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num == rhs.num;
+        }
+        bool operator==(const iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num == rhs.num;
+        }
+        bool operator!=(const const_iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num != rhs.num;
+        }
+        bool operator!=(const iterator &rhs) const {
+            if(iter != rhs.iter){throw invalid_iterator();}
+            return num != rhs.num;
+        }
     };
-    /**
-     * TODO Constructs
-     * Atleast two: default constructor, copy constructor
-     */
-    vector() {}
-    vector(const vector &other) {}
-    /**
-     * TODO Destructor
-     */
-    ~vector() {}
-    /**
-     * TODO Assignment operator
-     */
-    vector &operator=(const vector &other) {}
-    /**
-     * assigns specified element with bounds checking
-     * throw index_out_of_bound if pos is not in [0, size)
-     */
-    T & at(const size_t &pos) {}
-    const T & at(const size_t &pos) const {}
-    /**
-     * assigns specified element with bounds checking
-     * throw index_out_of_bound if pos is not in [0, size)
-     * !!! Pay attentions
-     *   In STL this operator does not check the boundary but I want you to do.
-     */
-    T & operator[](const size_t &pos) {}
-    const T & operator[](const size_t &pos) const {}
-    /**
-     * access the first element.
-     * throw container_is_empty if size == 0
-     */
-    const T & front() const {}
-    /**
-     * access the last element.
-     * throw container_is_empty if size == 0
-     */
-    const T & back() const {}
-    /**
-     * returns an iterator to the beginning.
-     */
-    iterator begin() {}
-    const_iterator cbegin() const {}
-    /**
-     * returns an iterator to the end.
-     */
-    iterator end() {}
-    const_iterator cend() const {}
-    /**
-     * checks whether the container is empty
-     */
-    bool empty() const {}
-    /**
-     * returns the number of elements
-     */
-    size_t size() const {}
-    /**
-     * clears the contents
-     */
-    void clear() {}
-    /**
-     * inserts value before pos
-     * returns an iterator pointing to the inserted value.
-     */
-    iterator insert(iterator pos, const T &value) {}
-    /**
-     * inserts value at index ind.
-     * after inserting, this->at(ind) == value
-     * returns an iterator pointing to the inserted value.
-     * throw index_out_of_bound if ind > size (in this situation ind can be size because after inserting the size will increase 1.)
-     */
-    iterator insert(const size_t &ind, const T &value) {}
-    /**
-     * removes the element at pos.
-     * return an iterator pointing to the following element.
-     * If the iterator pos refers the last element, the end() iterator is returned.
-     */
-    iterator erase(iterator pos) {}
-    /**
-     * removes the element with index ind.
-     * return an iterator pointing to the following element.
-     * throw index_out_of_bound if ind >= size
-     */
-    iterator erase(const size_t &ind) {}
-    /**
-     * adds an element to the end.
-     */
-    void push_back(const T &value) {}
-    /**
-     * remove the last element from the end.
-     * throw container_is_empty if size() == 0
-     */
-    void pop_back() {}
+    vector():cap(1), siz(0){vec = new T*[1];}
+    vector(const vector &other) {
+        siz = other.siz;
+        cap = other.cap;
+        vec = new T*[cap];
+        for(size_t i = 0; i < siz; ++i)vec[i] = new T(*(other.vec[i]));
+    }
+    ~vector() {
+        for(size_t i = 0; i < siz; ++i)delete vec[i];
+        delete [] vec;
+    }
+    vector & operator=(const vector &other){
+        if(this == &other)return *this;
+        for(size_t i = 0; i < siz; ++i)delete vec[i];
+        delete [] vec;
+        siz = other.siz;
+        cap = other.cap;
+        vec = new T*[cap];
+        for(size_t i = 0; i < siz; ++i)vec[i] = new T(*(other.vec[i]));
+        return *this;
+    }
+    T & at(const size_t &pos) {
+        if(pos >= siz || pos < 0)throw index_out_of_bound();
+        return *(vec[pos]);
+    }
+    const T & at(const size_t &pos) const {
+        if(pos >= siz || pos < 0)throw index_out_of_bound();
+        return *(vec[pos]);
+    }
+    T & operator[](const size_t &pos) {
+        if(pos >= siz || pos < 0)throw index_out_of_bound();
+        return *(vec[pos]);
+    }
+    const T & operator[](const size_t &pos) const {
+        if(pos >= siz || pos < 0)throw index_out_of_bound();
+        return *(vec[pos]);
+    }
+    const T & front() const {
+        if(siz == 0)throw container_is_empty();
+        return *vec[0];
+    }
+    const T & back() const {
+        if(siz == 0)throw container_is_empty();
+        return *vec[siz - 1];
+    }
+    iterator begin() {
+        iterator tmp;
+        tmp.iter = vec;
+        return tmp;
+    }
+    const_iterator cbegin() const {
+        const_iterator tmp;
+        tmp.iter = vec;
+        return tmp;
+    }
+    iterator end() {
+        iterator tmp;
+        tmp.iter = vec, tmp.num = siz;
+        return tmp;
+    }
+    const_iterator cend() const {
+        const_iterator tmp;
+        tmp.iter = vec, tmp.num = siz;
+        return tmp;
+    }
+    bool empty() const {return siz == 0;}
+    size_t size() const {return siz;}
+    void clear() {
+        for(int i = 0; i < siz; ++i)delete vec[i];
+        delete vec;
+        cap = 1, siz = 0, *vec = new T[1];
+    }
+    iterator insert(iterator pos, const T &value) {
+        expand();
+        // std::cerr<<"inserting:"<<value<<'\n';
+        size_t cur = pos.num;
+        vec[siz] = new T(*vec[siz - 1]);
+        for(size_t i = siz - 1; i > cur; --i){
+            delete vec[i];
+            vec[i] = new T(*vec[i - 1]);
+        }
+        delete vec[cur];
+        vec[cur] = new T(value);
+        iterator it;
+        it.iter = vec;
+        it.num = cur;
+        ++siz;
+        return it;
+    }
+    iterator insert(const size_t &ind, const T &value) {
+        if(ind > siz)throw index_out_of_bound();
+        expand();
+        vec[siz] = new T(*vec[siz - 1]);
+        for(size_t i = siz - 1; i > ind; --i){
+            delete vec[i];
+            vec[i] = new T(*vec[i - 1]);
+        }
+        delete vec[ind];
+        vec[ind] = new T(value);
+        iterator it;
+        it.iter = vec;
+        it.num = ind;
+        ++siz;
+        return it;
+    }
+    iterator erase(iterator pos) {
+        size_t ind = pos.num;
+        // std::cerr<<ind<<":"<<*pos<<'\n';
+        for(size_t i = ind + 1; i < siz; ++i){
+            delete vec[i - 1];
+            vec[i - 1] = new T(*vec[i]);
+        }
+        // for(size_t i = 0; i < siz - 1; ++i)std::cerr<<*vec[i]<<' ';std::cerr<<'\n';
+        delete vec[siz - 1];
+        --siz;
+        shrink();
+        return pos + 1;
+    }
+    iterator erase(const size_t &ind) {
+        if(ind >= siz)throw index_out_of_bound(); 
+        for(size_t i = ind + 1; i < siz; ++i){
+            delete vec[i - 1];
+            vec[i - 1] = new T(*vec[i]);
+        }
+        delete vec[siz - 1];
+        --siz;
+        shrink();
+        iterator pos;
+        pos.iter = vec;
+        pos.num = ind;
+        return pos + 1;
+    }
+    void push_back(const T &value) {
+        expand();
+        vec[siz] = new T(value), siz++;
+    }
+    void pop_back() {
+        if(!siz)throw container_is_empty();
+        delete vec[siz - 1];
+        --siz,shrink();
+    }
 };
-
 
 }
 
